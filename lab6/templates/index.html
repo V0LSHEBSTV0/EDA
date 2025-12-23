@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shoppers Prediction AI</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding-top: 50px; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 400px; }
+        h2 { text-align: center; color: #333; margin-bottom: 20px; }
+        label { font-weight: 600; color: #555; display: block; margin-top: 10px; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; background-color: #4CAF50; color: white; padding: 12px; border: none; border-radius: 6px; font-size: 16px; margin-top: 20px; cursor: pointer; transition: 0.3s; }
+        button:hover { background-color: #45a049; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 6px; text-align: center; font-weight: bold; display: none; }
+        .buy { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .no-buy { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .check-group { display: flex; align-items: center; margin-top: 15px; }
+        .check-group input { width: auto; margin-right: 10px; margin-top: 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🛍️ Shopper Predictor</h2>
+    <form id="predictForm">
+        
+        <label>Month</label>
+        <select id="Month" required>
+            <option value="Feb">Feb</option><option value="Mar">Mar</option><option value="May">May</option>
+            <option value="June">June</option><option value="Jul">Jul</option><option value="Aug">Aug</option>
+            <option value="Sep">Sep</option><option value="Oct">Oct</option><option value="Nov" selected>Nov</option><option value="Dec">Dec</option>
+        </select>
+
+        <label>Visitor Type</label>
+        <select id="VisitorType">
+            <option value="New_Visitor">New Visitor</option>
+            <option value="Returning_Visitor" selected>Returning Visitor</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <label>Page Values (0-100)</label>
+        <input type="number" id="PageValues" value="10" step="0.1">
+
+        <label>Exit Rates (0.0 - 1.0)</label>
+        <input type="number" id="ExitRates" value="0.05" step="0.01">
+
+        <label>Product Related Pages</label>
+        <input type="number" id="ProductRelated" value="5">
+
+        <label>Duration (ms)</label>
+        <input type="number" id="ProductRelated_Duration" value="200">
+
+        <div class="check-group">
+            <input type="checkbox" id="Weekend">
+            <label for="Weekend" style="margin-top:0">Is it Weekend?</label>
+        </div>
+
+        <button type="submit">Predict Purchase</button>
+    </form>
+
+    <div id="result"></div>
+</div>
+
+<script>
+    document.getElementById('predictForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Собираем данные
+        const data = {
+            Month: document.getElementById('Month').value,
+            VisitorType: document.getElementById('VisitorType').value,
+            Weekend: document.getElementById('Weekend').checked,
+            ProductRelated: parseFloat(document.getElementById('ProductRelated').value),
+            ProductRelated_Duration: parseFloat(document.getElementById('ProductRelated_Duration').value),
+            ExitRates: parseFloat(document.getElementById('ExitRates').value),
+            PageValues: parseFloat(document.getElementById('PageValues').value),
+            SpecialDay: 0, // Хардкод или добавь поле ввода
+            
+            // Заглушки для остальных полей, чтобы API не ругался
+            Administrative: 0, Administrative_Duration: 0,
+            Informational: 0, Informational_Duration: 0,
+            OperatingSystems: 1, Browser: 1, Region: 1, TrafficType: 1
+        };
+
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'block';
+        resultDiv.className = '';
+        resultDiv.innerHTML = 'Analyzing...';
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            
+            if (result.error) {
+                resultDiv.innerHTML = 'Error: ' + result.error;
+                resultDiv.className = 'no-buy';
+            } else {
+                const prob = (result.purchase_probability * 100).toFixed(1);
+                if (result.will_buy) {
+                    resultDiv.innerHTML = `✅ Will Buy! (${prob}%)`;
+                    resultDiv.className = 'buy';
+                } else {
+                    resultDiv.innerHTML = `❌ Won't Buy (${prob}%)`;
+                    resultDiv.className = 'no-buy';
+                }
+            }
+        } catch (error) {
+            resultDiv.innerHTML = 'Network Error!';
+        }
+    });
+</script>
+
+</body>
+</html>
