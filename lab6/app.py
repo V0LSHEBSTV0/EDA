@@ -13,21 +13,21 @@ try:
 except Exception as e:
     print(f"FAILED to load model: {e}")
 
-# Словари для маппинга (должны совпадать с трейном по смыслу)
+# Словари для маппинга 
 MONTH_MAP = {"Feb": 2, "Mar": 3, "May": 5, "June": 6, "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12}
 VISITOR_MAP = {"New_Visitor": 0, "Returning_Visitor": 1, "Other": 2}
 
 def preprocess_input(data_dict):
     df = pd.DataFrame([data_dict])
     
-    # 1. Month Processing
+    # Month Processing
     if 'Month' in df.columns:
         df['Month_Num'] = df['Month'].map(MONTH_MAP).fillna(0).astype(int)
         df['Month_sin'] = np.sin(2 * np.pi * df['Month_Num'] / 12)
         df['Month_cos'] = np.cos(2 * np.pi * df['Month_Num'] / 12)
         df = df.drop(columns=['Month', 'Month_Num'])
-    
-    # 2. Duration Processing
+   
+    # Duration Processing
     if 'ProductRelated' in df.columns and 'ProductRelated_Duration' in df.columns:
         df['Product_Avg_Duration'] = df.apply(
             lambda row: row['ProductRelated_Duration'] / row['ProductRelated'] if row['ProductRelated'] > 0 else 0.0, 
@@ -38,12 +38,11 @@ def preprocess_input(data_dict):
     if 'BounceRates' in df.columns:
         df = df.drop(columns=['BounceRates'])
         
-    # 3. VisitorType -> Int
     if 'VisitorType' in df.columns:
         if df['VisitorType'].dtype == 'object':
              df['VisitorType'] = df['VisitorType'].map(VISITOR_MAP).fillna(2).astype(int)
     
-    # 4. Fill missing columns
+    # Fill missing columns
     expected_cols = [
         "Administrative", "Administrative_Duration", 
         "Informational", "Informational_Duration", 
@@ -60,7 +59,6 @@ def preprocess_input(data_dict):
             
     df = df[expected_cols]
     
-    # 5. ФИНАЛЬНЫЕ ТИПЫ
     for col in df.columns:
         if col == "VisitorType":
             df[col] = df[col].astype(int)
@@ -90,5 +88,4 @@ def predict():
         return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
-    # Важно: host='0.0.0.0' чтобы Docker пробросил порт
     app.run(debug=True, host='0.0.0.0', port=5000)
